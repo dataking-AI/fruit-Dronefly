@@ -1,0 +1,93 @@
+import sys, os, json, traceback, importlib.metadata as md
+from pathlib import Path
+sys.dont_write_bytecode = True
+ROOT=Path(r'D:\zerozero_code\fruit-dronefly')
+OUT=Path(__file__).parent/'fruit_env_probe_result.json'
+report={'python':sys.version,'executable':sys.executable,'packages':{}}
+def record(key,value):
+    report[key]=value
+    OUT.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+    print('PROBE',key,json.dumps(value,ensure_ascii=False),flush=True)
+
+for name in ['isaaclab','isaaclab_rl','isaacsim','torch','torchvision','rsl-rl-lib','gymnasium','tensordict','onnx','onnxscript','DroneFollow']:
+    try: report['packages'][name]=md.version(name)
+    except md.PackageNotFoundError: report['packages'][name]=None
+record('metadata_complete',True)
+import torch
+record('cuda',{'available':torch.cuda.is_available(),'name':torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,'arch_list':torch.cuda.get_arch_list()})
+x=torch.randn(8,19,device='cuda',requires_grad=True)
+w=torch.randn(19,3,device='cuda',requires_grad=True)
+y=x@w;y.square().mean().backward()
+record('cuda_matmul_autograd',bool(torch.isfinite(w.grad).all()))
+from rsl_rl.models import MLPModel
+from rsl_rl.utils import resolve_callable
+from tensordict import TensorDict
+obs=TensorDict({'policy':torch.randn(8,19,device='cuda'),'critic':torch.randn(8,19,device='cuda')},batch_size=[8])
+actor=MLPModel(obs,{'actor':['policy']},'actor',3,hidden_dims=[32,32],distribution_cfg={'class_name':'GaussianDistribution','init_std':0.5}).cuda()
+critic=MLPModel(obs,{'critic':['critic']},'critic',1,hidden_dims=[32,32]).cuda()
+a=actor(obs,stochastic_output=True); v=critic(obs)
+record('rsl_model',{'action':list(a.shape),'value':list(v.shape),'finite':bool(torch.isfinite(a).all() and torch.isfinite(v).all()),'module_resolver':str(resolve_callable('rsl_rl.models:MLPModel'))})
+sys.path.insert(0,str(ROOT/'source'/'DroneFollow'))
+os.environ['STAGE']='0'
+from isaaclab.app import AppLauncher
+launcher=AppLauncher(headless=True,device='cuda:0')
+app=launcher.app
+env=None
+try:
+    record('app_started',True)
+    import gymnasium as gym
+    import DroneFollow
+    record('project_loaded',DroneFollow.__file__)
+    ids=[k for k in gym.registry if 'Dronefollow' in k or 'Hover' in k or 'FruitDronefly' in k]
+    record('task_ids',ids)
+    from isaaclab_tasks.utils import load_cfg_from_registry
+    from isaaclab_rl.rsl_rl import handle_deprecated_rsl_rl_cfg,RslRlVecEnvWrapper
+    cfg=load_cfg_from_registry('IsaacLab-Dronefollow-v0','env_cfg_entry_point')
+    acfg=load_cfg_from_registry('IsaacLab-Dronefollow-v0','rsl_rl_cfg_entry_point')
+    acfg=handle_deprecated_rsl_rl_cfg(acfg,md.version('rsl-rl-lib'))
+    record('runner_config',{'actor':acfg.actor.to_dict(),'critic':acfg.critic.to_dict(),'clip_actions':acfg.clip_actions})
+    cfg.scene.num_envs=2
+    cfg.sim.device='cuda:0'
+    # Only disable remote decorative materials for this compatibility probe.
+    # Physical asset, terrain, controller, observations and rewards remain unchanged.
+    cfg.scene.terrain.visual_material=None
+    cfg.scene.sky_light.spawn.texture_file=None
+    record('probe_overrides',{'num_envs':2,'terrain_visual_material':None,'sky_texture':None})
+    env=gym.make('IsaacLab-Dronefollow-v0',cfg=cfg)
+    env=RslRlVecEnvWrapper(env,clip_actions=acfg.clip_actions)
+    obs=env.get_observations()
+    record('env_created',{'obs':{k:list(v.shape) for k,v in obs.items()},'actions':env.num_actions})
+    for i in range(100):
+        obs,rewards,dones,extras=env.step(torch.zeros((2,3),device='cuda:0'))
+        assert all(torch.isfinite(t).all() for t in obs.values())
+        assert torch.isfinite(rewards).all()
+    record('env_steps',100)
+    from rsl_rl.runners import OnPolicyRunner
+    acfg.num_steps_per_env=16
+    acfg.algorithm.num_mini_batches=2
+    run_dir=Path(__file__).parent/'fruit_env_probe_ppo'
+    runner=OnPolicyRunner(env,acfg.to_dict(),log_dir=str(run_dir),device='cuda:0')
+    runner.learn(num_learning_iterations=2,init_at_random_ep_len=False)
+    record('ppo_iterations',2)
+    checkpoint=run_dir/'probe.pt';runner.save(str(checkpoint));runner.load(str(checkpoint))
+    policy=runner.get_inference_policy(device='cuda:0')
+    with torch.no_grad(): actions=policy(obs)
+    record('checkpoint_reload',{'path':str(checkpoint),'actions':list(actions.shape),'finite':bool(torch.isfinite(actions).all())})
+    runner.export_policy_to_jit(path=str(run_dir/'exported'))
+    record('jit_export',True)
+    saved=torch.jit.load(str(run_dir/'exported'/'policy.pt'))
+    test_obs=TensorDict({'policy':torch.randn(8,19),'critic':torch.randn(8,19)},batch_size=[8])
+    with torch.no_grad():
+        error=(policy.cpu()(test_obs)-saved(test_obs['policy'])).abs().max().item()
+    record('jit_max_abs_error',error)
+    runner.export_policy_to_onnx(path=str(run_dir/'exported'))
+    import onnx
+    onnx.checker.check_model(str(run_dir/'exported'/'policy.onnx'))
+    record('onnx_export_and_checker',True)
+except Exception:
+    record('error',traceback.format_exc())
+    raise
+finally:
+    if env is not None: env.close()
+    record('env_closed',True)
+    app.close()

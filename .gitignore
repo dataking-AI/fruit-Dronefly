@@ -1,0 +1,10 @@
+# OS/editor temporary files
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# Obsidian Git creates this local credential-helper script.
+# Keep the rest of .obsidian tracked as repository configuration.
+.obsidian/plugins/obsidian-git/obsidian_askpass.sh

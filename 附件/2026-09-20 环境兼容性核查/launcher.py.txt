@@ -1,0 +1,11 @@
+from pathlib import Path
+import subprocess, json
+p=Path(__file__).parent
+with (p/'fruit_env_probe.log').open('w',encoding='utf-8') as log:
+    try:
+        r=subprocess.run([r'D:\software\miniconda3\envs\env_isaaclab\python.exe','-B','-u',str(p/'fruit_env_probe.py')],stdout=log,stderr=subprocess.STDOUT,cwd=p,timeout=300)
+        result={'returncode':r.returncode}
+    except subprocess.TimeoutExpired:
+        result={'timeout_seconds':300}
+(p/'fruit_env_probe_exit.json').write_text(json.dumps(result),encoding='utf-8')
+print(json.dumps(result),flush=True)

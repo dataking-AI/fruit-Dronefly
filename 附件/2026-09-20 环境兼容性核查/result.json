@@ -1,0 +1,115 @@
+{
+  "python": "3.11.16 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:36:16) [MSC v.1942 64 bit (AMD64)]",
+  "executable": "D:\\software\\miniconda3\\envs\\env_isaaclab\\python.exe",
+  "packages": {
+    "isaaclab": "0.54.4",
+    "isaaclab_rl": "0.5.2",
+    "isaacsim": "5.1.0.0",
+    "torch": "2.7.0+cu128",
+    "torchvision": "0.22.0+cu128",
+    "rsl-rl-lib": "5.0.1",
+    "gymnasium": "1.2.1",
+    "tensordict": "0.14.2",
+    "onnx": "1.22.0",
+    "onnxscript": "0.7.2",
+    "DroneFollow": "0.1.0"
+  },
+  "metadata_complete": true,
+  "cuda": {
+    "available": true,
+    "name": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "arch_list": [
+      "sm_50",
+      "sm_60",
+      "sm_61",
+      "sm_70",
+      "sm_75",
+      "sm_80",
+      "sm_86",
+      "sm_90",
+      "sm_100",
+      "sm_120"
+    ]
+  },
+  "cuda_matmul_autograd": true,
+  "rsl_model": {
+    "action": [
+      8,
+      3
+    ],
+    "value": [
+      8,
+      1
+    ],
+    "finite": true,
+    "module_resolver": "<class 'rsl_rl.models.mlp_model.MLPModel'>"
+  },
+  "app_started": true,
+  "project_loaded": "D:\\zerozero_code\\fruit-dronefly\\source\\DroneFollow\\DroneFollow\\__init__.py",
+  "task_ids": [
+    "IsaacLab-Dronefollow-v0",
+    "IsaacLab-Dronefollow-v1",
+    "IsaacLab-Dronefollow-MPC-v0",
+    "IsaacLab-Dronefollow-MPC-v1",
+    "IsaacLab-Hover-v0"
+  ],
+  "runner_config": {
+    "actor": {
+      "class_name": "MLPModel",
+      "hidden_dims": [
+        32,
+        32
+      ],
+      "activation": "elu",
+      "obs_normalization": false,
+      "distribution_cfg": {
+        "class_name": "GaussianDistribution",
+        "init_std": 0.5,
+        "std_type": "scalar"
+      }
+    },
+    "critic": {
+      "class_name": "MLPModel",
+      "hidden_dims": [
+        32,
+        32
+      ],
+      "activation": "elu",
+      "obs_normalization": false,
+      "distribution_cfg": null
+    },
+    "clip_actions": null
+  },
+  "probe_overrides": {
+    "num_envs": 2,
+    "terrain_visual_material": null,
+    "sky_texture": null
+  },
+  "env_created": {
+    "obs": {
+      "policy": [
+        2,
+        19
+      ],
+      "critic": [
+        2,
+        19
+      ]
+    },
+    "actions": 3
+  },
+  "env_steps": 100,
+  "ppo_iterations": 2,
+  "checkpoint_reload": {
+    "path": "C:\\Users\\zerozero\\AppData\\Local\\Temp\\fruit_env_probe_ppo\\probe.pt",
+    "actions": [
+      2,
+      3
+    ],
+    "finite": true
+  },
+  "jit_export": true,
+  "jit_max_abs_error": 0.0,
+  "onnx_export_and_checker": true,
+  "env_closed": true
+}
