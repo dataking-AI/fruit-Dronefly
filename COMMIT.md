@@ -1,0 +1,1 @@
+读一下obsidian库，我准备git commit, 帮我看下库的改动，生成详略得当的commit中文说明。

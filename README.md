@@ -3,17 +3,17 @@ tags:
   - fruit-dronefly
   - 工程接手
 类型: 工程接手
-工程状态: 未实施
+工程状态: 首版清理与 CUDA 采样优化已实施
 文档审查状态: 已完成本轮静态审查
-代码实施状态: 未实施
-运行验证状态: 未执行
-核查日期: 2026-09-20
+代码实施状态: 清理、迁移与局部 reset 已提交 f7f085d；CUDA 优化和新增测试未提交
+运行验证状态: 专项通过（局部 reset、CUDA 优化与 PPO smoke；play／导出／4096 规模未验证）
+核查日期: 2026-09-22
 源码根目录: 'D:\zerozero_code\fruit-dronefly'
 ---
 
 # FruitDronefly 工程文档入口
 
-本知识库是 FruitDronefly 的工程改动审查与接手文档，独立记录目标、当前源码事实、已选方案及后续升级，不需要查阅历史对话。**当前工程清理和连接组策略接入尚未实施，新任务运行验收尚未执行；原 v0 的环境与 PPO 兼容性已做小规模检查。**
+本知识库是 FruitDronefly 的工程改动审查与接手文档，独立记录目标、当前源码事实、已选方案及后续升级，不需要查阅历史对话。**首版清理、包名迁移、局部 reset 修复和 CUDA 采样路径优化已经实施并完成专项验证；图 Actor、play／导出和默认规模验收仍未完成。**
 
 ## 从这里开始
 
@@ -30,12 +30,20 @@ tags:
 | 目录 | 用途 |
 |---|---|
 | D:\personal_code\fruit-dronefly | 本知识库，工程方案的集中维护位置 |
-| D:\zerozero_code\fruit-dronefly | 待实施源码；[源码 README](<D:/zerozero_code/fruit-dronefly/README.md>) 指回本库 |
+| D:\zerozero_code\fruit-dronefly | 实施源码；[源码 README](<D:/zerozero_code/fruit-dronefly/README.md>) 指回本库 |
 
-2026-09-20 静态复核时，源码仍保留五个旧环境 ID。本文档的“已审查”仅表示文档静态检查完成，不代表工程代码已实现或任务已运行。各页 YAML 分别记录文档审查、代码实施、运行验证状态。
+2026-09-22 回填时，源码已收敛为唯一 `IsaacLab-FruitDronefly-v0`，并完成局部 reset 与 CUDA 采样优化专项验证。图 Actor、play／导出、默认 4096 环境、远程材质和长期训练仍未验收；各页 YAML 继续分别记录文档审查、代码实施和运行验证状态。
 
 更换机器后，应先依据仓库索引重新定位本地目录；绝对路径失效不代表允许自动下载、安装或更换依赖版本。AGENTS.md 的自动发现取决于工具和工作目录，本 README 是显式导航入口。
 
 ## 实测环境补充
 
-[[08 运行环境兼容性与版本方案]] 记录 env_isaaclab 的实际版本、原 v0 运行证据、依赖冲突和两套版本路线。正式 v2.3.2 tag 与本地 VERSION=2.3.2 的 HEAD 不可混用。Python 包名已确定为 fruit_dronefly，迁移清单见仓库清理页；实际源码尚未改名。OmniDrones 控制与局部 reset 参考见 [[06 本地代码库与复用清单]]。
+[[08 运行环境兼容性与版本方案]] 记录 env_isaaclab 的实际版本、原 v0 运行证据、依赖冲突和两套版本路线。正式 v2.3.2 tag 与本地 VERSION=2.3.2 的 HEAD 不可混用。Python 包名已统一为 fruit_dronefly，迁移清单和实跑证据见仓库清理页与上下文页。OmniDrones 控制与局部 reset 参考见 [[06 本地代码库与复用清单]]。
+
+## CUDA 采样优化回填
+
+2026-09-21 已完成 reset 查表、固定形状朝向计算和增量轨迹分组优化。CPU／CUDA 专项、真实局部 reset 物理回归、3 轮 PPO smoke 与 2048 环境采样 A/B 测量均有记录。完整结果见 [CUDA 优化验证摘要](<D:/zerozero_code/fruit-dronefly/logs/validation/cuda_optimization_20260921/summary.md>)；这是一轮有界性能证据，不代表长期训练吞吐、收敛或默认 4096 环境可启动。
+
+## 自动化测试入口
+
+日常检查、运行命令、覆盖范围与执行频率见 [[09 自动化测试与回归检查]] 和源码仓库的 [测试说明](<D:/zerozero_code/fruit-dronefly/scripts/tests/README.md>)。专项脚本仍需手动逐个启动，尚未接入 CI；历史验收结果不等于新修改自动通过。

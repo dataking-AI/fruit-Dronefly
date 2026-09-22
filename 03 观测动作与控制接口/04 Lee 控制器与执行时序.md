@@ -3,11 +3,11 @@ tags:
   - fruit-dronefly
   - 工程审查
 类型: 工程改动
-工程状态: 未实施
+工程状态: 局部 reset 已修复
 文档审查状态: 已完成本轮静态审查
-代码实施状态: 未实施
-运行验证状态: 未执行
-核查日期: 2026-09-20
+代码实施状态: 局部 reset 修复已提交 f7f085d；本轮 CUDA 优化未提交
+运行验证状态: 4 环境局部 reset、CUDA 采样和 PPO smoke 专项通过；Lee 时序未改变
+核查日期: 2026-09-22
 文档修订: 独立接手版（最小骨架与FlyDrones扩展）
 源码根目录: 'D:\zerozero_code\fruit-dronefly'
 ---
@@ -52,9 +52,9 @@ sequenceDiagram
 
 ## reset 保留与核查
 
-DroneAction.reset_idx 清理选定环境的原始动作、命令历史和延迟，保留当前 yaw，调用 controller.reset_idx，并重建悬停所需推力缓冲。命令历史另由轨迹模块处理。
+DroneAction.reset_idx 仅清理选中环境的动作、延迟缓冲和控制器状态，保留选中环境当前 yaw；force／torque 清零并按 env_ids 写入 composer，不在 reset 内重算全批悬停推力。下一策略步正常计算 Lee 控制输出。
 
-静态复核已确认 reset 全量重建 force_body／torque_body，只回填选中环境后全量施力，会清空未重置环境的缓冲。下一次 process_actions 可能覆盖，因此实际轨迹影响仍须物理步回归，不能直接断言必然掉高。普通与 MPC 分支均有同样缺陷；详见下方“局部 reset 复核与参考做法”。
+2026-09-21 已补齐命令路径的索引隔离和历史推进修复，并通过专项回归。原缺陷分析保留在下文历史记录中；实际验证范围与限制见本页最后的修复与验收记录。
 
 ## 改动记录与验收
 
@@ -64,7 +64,7 @@ DroneAction.reset_idx 清理选定环境的原始动作、命令历史和延迟�
 - **改后行为**：换 Actor 后仍由传统控制器稳定姿态。
 - **关联影响**：时序、动作延迟、质量惯量、contact 更新、局部 reset。
 - **验收条件**：核对每环境步控制计算／每物理步施力调用次数；零速度指令能维持悬停趋势；无 NaN；局部 reset 不扰乱未重置环境状态。
-- **审查状态**：工程未实施；运行调用次数与 reset 回归待验证。
+- **审查状态**：局部 reset 与运行调用次数专项验证通过；长期训练及部署验证不在本次范围。
 
 - [ ] 不将本次骨架通过等同真实无人机控制验证。
 - [ ] 记录 controller 输出的单位及所在坐标系。
@@ -82,14 +82,14 @@ FlyDrones runtime 默认按约 20 Hz 调用单个 Pilot，Brain 内部又按 LIF
 
 | 源码位置（相对代码仓库） | 依据 |
 |---|---|
-| [source/DroneFollow/DroneFollow/common/controller/lee_controller_position_and_yaw.py](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/common/controller/lee_controller_position_and_yaw.py>) | 已存在；2026-09-20 静态核查 |
-| [source/DroneFollow/DroneFollow/common/controller/lee_controller_position_and_yaw_cfg.py](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/common/controller/lee_controller_position_and_yaw_cfg.py>) | 已存在；2026-09-20 静态核查 |
-| [source/DroneFollow/DroneFollow/common/actions/action.py](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/common/actions/action.py>) | 已存在；2026-09-20 静态核查 |
-| [source/DroneFollow/DroneFollow/tasks/dronefollow/dronefollow_env_cfg_v0.py](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/tasks/dronefollow/dronefollow_env_cfg_v0.py>) | 已存在；2026-09-20 静态核查 |
+| [source/fruit_dronefly/fruit_dronefly/common/controller/lee_controller_position_and_yaw.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/common/controller/lee_controller_position_and_yaw.py>) | 已存在；2026-09-21 静态核查 |
+| [source/fruit_dronefly/fruit_dronefly/common/controller/lee_controller_position_and_yaw_cfg.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/common/controller/lee_controller_position_and_yaw_cfg.py>) | 已存在；2026-09-21 静态核查 |
+| [source/fruit_dronefly/fruit_dronefly/common/actions/action.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/common/actions/action.py>) | 已存在；2026-09-21 静态核查 |
+| [source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/fruit_dronefly_env_cfg.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/fruit_dronefly_env_cfg.py>) | 已存在；2026-09-21 静态核查 |
 
 ## 局部 reset 复核与参考做法
 
-2026-09-20 比对当前仓库与原 D:\zerozero_code\dronefollow：common/actions/action.py、mpc_action.py，以及两个任务目录的 mdp/commands/commands.py，四个文件逐一 SHA-256 一致。两份 commands.py 彼此也一致。这是原工程当前实现中已有的缺陷，被复制到 FruitDronefly；不是 MPC 算法或 Isaac Lab 框架的必然限制。
+以下为修复前历史记录。2026-09-20 比对当时仓库与原 D:\zerozero_code\dronefollow：common/actions/action.py、mpc_action.py，以及两个任务目录的 mdp/commands/commands.py，四个文件逐一 SHA-256 一致。两份 commands.py 彼此也一致。这是原工程当前实现中已有的缺陷，被复制到 FruitDronefly；不是 MPC 算法或 Isaac Lab 框架的必然限制。
 
 - [普通动作 reset](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/common/actions/action.py>) 与 [MPC reset](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/common/actions/mpc_action.py>) 都全量重建机身推力／力矩缓冲，只填回 env_ids，然后全量 apply_actions。MPC v0/v1 均配置此动作类。
 - [普通命令 reset](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/tasks/dronefollow/mdp/commands/commands.py>) 与 [MPC 命令 reset](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/tasks/dronefollow_mpc/mdp/commands/commands.py>) 都在局部 reset 时调用 _update_target_pose，后者全量追加历史；正常环境步又追加一次。固定帧数延迟因此会受其他环境 reset 影响。MPC v0/v1 同样启用 0.11 s 目标延迟。
@@ -101,4 +101,22 @@ FlyDrones runtime 默认按约 20 Hz 调用单个 Pilot，Brain 内部又按 LIF
 3. 目标轨迹更新与历史推进分离：正常环境步只追加一次；reset 只重填选中环境的各历史槽，不推进其他环境时间轴，也不清除其噪声样本。
 4. 用两个以上环境固定状态／动作，比较其他环境不 reset 与频繁 reset 两组：目标历史、施力缓冲及下一物理步一致；另外覆盖全量 reset、首次 reset、连续 reset 和动作延迟。
 
-状态：缺陷源码路径与原工程一致性已确认；OmniDrones 仅静态参考；本轮未修复功能代码、未运行 MPC 或物理轨迹回归。
+历史状态（2026-09-20）：缺陷与原工程一致，尚未修复。2026-09-21 补修结果见下文；MPC 已删除，不作运行验收。
+
+## 2026-09-21 局部 reset 修复与专项验收
+
+本次用户授权修复 P01／P02 并更新状态。参考 OmniDrones `9ce7c2028b71be64d7e748c31f685cd3b54afe27` 的 `MultirotorBase._reset_idx`：按 env_ids 原地清理；未复制其旋翼 throttle 或旧仿真 API，未修改、安装或运行参考仓库。
+
+- **原缺陷**：reset 调用 `_update_target_pose(env_ids)` 后仍全批追加历史、覆盖其他环境的噪声；课程切换还会重建整组轨迹并丢失其他环境的航点／方向。此前“P01 代码已修”的结论不完整，本条记录实际补修。
+- **当前实现**：目标轨迹仅计算并写入选中行，approach 事件也按索引更新；每次 `_update_command` 只追加一次历史，reset 只覆写选中行。轨迹重新分组时保留继续运行环境的状态，未变化的组复用原对象。空 reset 不做操作，有限范围 slice 保持索引范围。动作 reset 不再刷新整批状态快照；Lee 状态、延迟动作、force／torque 及 permanent_wrench_composer 仅清理选中环境。
+- **专项验证**：`env_isaaclab`／Isaac Sim 5.1，4 环境、19 维 Actor／Critic、3 维动作，`action_lag=2`，开启 approach，使用本地材质。七种轨迹的选中计算与完整计算一致；实际环境验证重复、空、slice、全量 reset，以及手动切换地形 level 后其他环境的轨迹、噪声、历史、动作、控制器和 composer 完全不变。
+- **对照**：25 步无 reset／频繁 reset 的命令对照，在固定未来噪声采样后未重置行及延迟历史逐值一致。实际下一物理子步对照还原 root／joint 状态，未重置环境误差满足 `atol=2e-4, rtol=1e-4`。共享随机数发生器会因 reset 消耗随机数，本测试将其与持久状态污染分开检查，不承诺跨分支的未来随机样本天然相同。
+- **时序与烟测**：连续 100 步，无 NaN／形状变化；每策略步一次目标历史追加、一次 Lee compute、四次全 batch 施力，局部 reset 可额外写选中行。持续环境的 last_action 等于上一策略命令。静态编译和 CRLF 感知的 Git 空白检查通过。
+- **复现**：从源码仓库、env_isaaclab 执行 `python scripts/tests/check_partial_reset.py`。脚本：[check_partial_reset.py](<D:/zerozero_code/fruit-dronefly/scripts/tests/check_partial_reset.py>)。本机日志：[partial_reset_2026-09-21.log](<D:/zerozero_code/fruit-dronefly/logs/validation/partial_reset_2026-09-21.log>)，Git 忽略。
+- **限制**：验证手动 level 切换的状态保持，未验证完整课程晋级策略；下一物理步对照不等于长时轨迹逐位确定性。首次局部 reset 专项当时未跑 PPO；后续 CUDA 优化已补做 3 次 PPO smoke。默认 4096 环境、远程材质、play／导出仍未验证。局部 reset 修复现已包含在 f7f085d，本轮 CUDA 优化未提交。图 Actor、FlyDrones 和新 checkpoint 格式仍未实施。
+
+## 2026-09-22 CUDA 采样优化与控制时序边界
+
+本轮优化位于 reset、轨迹朝向和命令分组刷新路径，没有改变控制器输入、调用频率或施力顺序。专项仍确认每策略步一次 Lee compute、每物理子步施力，即策略／Lee 25 Hz、物理 100 Hz。不能把局部采样 A/B 写成飞行品质或长期吞吐结论。
+
+本轮在优化后复跑局部 reset 物理回归和 PPO smoke，详细结果及限制见 [[05 实施顺序与验收#CUDA 采样优化专项（P12）]]。
