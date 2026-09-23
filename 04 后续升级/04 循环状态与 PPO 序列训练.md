@@ -3,16 +3,21 @@ tags:
   - fruit-dronefly
   - 工程审查
 类型: 后续升级
-工程状态: 后续未实施
+工程状态: F01 独立探针已实施；正式视觉任务及其他升级待实施
 文档审查状态: 已完成本轮静态审查
-代码实施状态: 后续未实施
-运行验证状态: 未执行
+代码实施状态: 基线 acfdfcf 加未提交 F01 模块；首版测试图及相机闭环未实施
+运行验证状态: 原有专项及 F01 独立探针通过；完整飞行策略与相机闭环验收仍待完成
 核查日期: 2026-09-22
 文档修订: FlyVis 优先视觉 MVP，MaleCNS 第二路线
 源码根目录: 'D:\zerozero_code\fruit-dronefly'
 ---
 
 # 循环状态与 PPO 序列训练
+
+## 2026-09-23 F01 当前进展
+
+F01 固定视频、冻结状态、读出 PPO 与导出已通过；相机避障闭环未接入。源码基线 `acfdfcf` 加未提交 F01 工作树，不能仅凭 HEAD 复现；12 个受测文件 SHA-256 见 [[05 实施顺序与验收#2026-09-23 F01：冻结视觉独立探针与读出验证]]。环境为从 `env_isaaclab` 克隆的 `fruit_dronefly`。本页既有首版与历史验收记录保留，独立读出验证不替代测试图、完整飞行策略或相机闭环验收。
+
 
 [[07 工程上下文与接手约定|工程上下文与接手约定]] · [[README|阅读入口]]
 
@@ -34,7 +39,7 @@ FlyVis 若保留原有时间动力学，也会产生需要管理的视觉状态�
 
 状态验收前移到 F0/F2；冻结权重仍需逐环境视觉状态、初始化、时间步、图像／策略频率和 dones/env_ids reset。视觉子步累计时长应与图像更新时间匹配；漏帧或动作保持策略需在配置中固定，不能每步重置模型来冒充原有时间动力学。
 
-冻结阶段可把 FlyVis 作为 no_grad 的有状态观测预处理器，rollout 保存当时计算出的活动特征，小型 MLP 仍可使用无记忆 PPO。视觉状态由采样／回放管理，不要求为冻结模型做 BPTT；更新 readout 时不能用乱序帧重新推进视觉状态。
+冻结阶段可把 FlyVis 作为 no_grad 的有状态观测预处理器，rollout 保存所有可训练层之前的原始活动 `[B,24514]`（34×721），不能缓存已训练卷积之后的 128 维特征，小型 MLP 仍可使用无记忆 PPO。视觉状态由采样／回放管理，不要求为冻结模型做 BPTT；更新 readout 时不能用乱序帧重新推进视觉状态。
 
 解冻阶段才需要保存帧序列、episode 边界和起点状态，按序重算活动并进行截断反传；明确截断长度、burn-in／起点状态处理及 rollout 和更新的一致性。先核查 RSL-RL 原生支持，再补适配。MaleCNS 循环连续图是另一条状态方程与稳定性核查，不能直接照搬 FlyVis 或 NumPy LIF 状态。
 
@@ -50,7 +55,7 @@ FlyVis 若保留原有时间动力学，也会产生需要管理的视觉状态�
 - **改后行为**：循环回路与气味／视觉历史可以参与策略决策。
 - **关联影响**：采样、训练状态一致性、计算子步与控制周期、保存恢复、导出和部署。
 - **验收条件**：分段与连续推理一致；局部 reset 不清其他环境；训练不跨 episode 串接梯度；checkpoint 恢复与状态规则可复现。
-- **审查状态**：后续未实施；隐藏状态规模、时间常数及展开长度待模型选定后审查。
+- **审查状态**：冻结 FlyVis 状态管理已通过探针；有限解冻、序列反传及完整任务状态集成待实现。
 
 - [ ] 无跨 episode 的状态泄漏。
 - [ ] 正确区分 episode 结束、time-limit bootstrap 和计算图截断。
@@ -72,3 +77,7 @@ FlyVis 若保留原有时间动力学，也会产生需要管理的视觉状态�
 | [scripts/rsl_rl/train.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/train.py>) | 已存在；2026-09-20 静态核查 |
 | [scripts/rsl_rl/play.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/play.py>) | 已存在；2026-09-20 静态核查 |
 | [source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py>) | 已迁移；2026-09-22 路径复核，未新增运行证据 |
+
+## 2026-09-23 冻结状态实测契约
+
+冻结表示参数不更新，时间状态仍跨帧推进。`FrozenFlyVis` 使用 no_grad、dt=0.01 s，每帧 4 子步对应 25 Hz；预训练数据配置 dt=0.02 s，二者不混写。启动时用亮度 0.5 灰屏预刺激 1 s，缓存一次并按选中 env_ids 拷贝。连续／分段、单体／批量、重复／空／全量／局部 reset 与未重置行下一步一致性均通过。checkpoint 回放验证从缓存灰屏状态开始，不表示任意视频中途状态恢复已验收。

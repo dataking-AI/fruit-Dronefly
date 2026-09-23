@@ -2,7 +2,7 @@
 	"nodes":[
 		{"id":"future-group","type":"group","x":2550,"y":310,"width":1280,"height":3080,"color":"6","label":"后续升级｜FlyVis MVP 优先，MaleCNS 第二路线"},
 		{"id":"current-group","type":"group","x":-70,"y":310,"width":2520,"height":1550,"color":"3","label":"首版基座｜清理与优化已实施，图 Actor 待实施"},
-		{"id":"legend","type":"text","text":"# 首版基座＋FlyVis 优先视觉 MVP\n\n清理与 CUDA 优化已有专项证据，图 Actor 未实施。\n后续：固定几何适配 → 冻结 FlyVis → 小型 MLP／PPO → 三维速度／Lee。状态与资源验收后可选有限解冻。\nMaleCNS/FlyDrones 数据与跨模型映射为第二路线；嗅觉、部署后置。后续均未运行验证。\n具体范围、顺序和验收以各页为准。","x":0,"y":-350,"width":2000,"height":200,"color":"5"},
+		{"id":"legend","type":"text","text":"# 首版基座＋FlyVis 优先视觉 MVP\n\n清理与 CUDA 优化已有专项证据，图 Actor 未实施。\n后续：固定几何适配 → 冻结 FlyVis → 小型 MLP／PPO → 三维速度／Lee。状态与资源验收后可选有限解冻。\nMaleCNS/FlyDrones 数据与跨模型映射为第二路线；嗅觉、部署后置。F01 冻结视频与独立读出已验证；正式相机闭环及其他升级未验证。\n具体范围、顺序和验收以各页为准。","x":0,"y":-350,"width":2000,"height":200,"color":"5"},
 		{"id":"overview","type":"file","file":"00 改动总览.md","x":0,"y":0,"width":1050,"height":260,"color":"3"},
 		{"id":"cleanup","type":"file","file":"01 仓库清理与任务收敛.md","x":0,"y":390,"width":510,"height":350,"color":"3"},
 		{"id":"control","type":"file","file":"03 观测动作与控制接口/04 Lee 控制器与执行时序.md","x":1860,"y":910,"width":510,"height":390,"color":"3"},

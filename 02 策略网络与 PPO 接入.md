@@ -5,14 +5,19 @@ tags:
 类型: 工程改动
 工程状态: 未实施
 文档审查状态: 已完成本轮静态审查
-代码实施状态: 未实施
-运行验证状态: 未执行
+代码实施状态: 基线 acfdfcf 加未提交 F01 模块；首版测试图及相机闭环未实施
+运行验证状态: 原有专项及 F01 独立探针通过；完整飞行策略与相机闭环验收仍待完成
 核查日期: 2026-09-20
 文档修订: 独立接手版（最小骨架与FlyDrones扩展）
 源码根目录: 'D:\zerozero_code\fruit-dronefly'
 ---
 
 # 策略网络与 PPO 接入
+
+## 2026-09-23 F01 当前进展
+
+F01 固定视频、冻结状态、读出 PPO 与导出已通过；相机避障闭环未接入。源码基线 `acfdfcf` 加未提交 F01 工作树，不能仅凭 HEAD 复现；12 个受测文件 SHA-256 见 [[05 实施顺序与验收#2026-09-23 F01：冻结视觉独立探针与读出验证]]。环境为从 `env_isaaclab` 克隆的 `fruit_dronefly`。本页既有首版与历史验收记录保留，独立读出验证不替代测试图、完整飞行策略或相机闭环验收。
+
 
 [[07 工程上下文与接手约定|工程上下文与接手约定]] · [[README|阅读入口]]
 
@@ -108,3 +113,7 @@ M 为固定连边；W 为 PPO 更新的参数；最后一层线性读出三维�
 | [source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py>) | 已迁移；2026-09-22 路径复核，未新增运行证据 |
 | [scripts/rsl_rl/train.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/train.py>) | 已存在；2026-09-20 静态核查 |
 | [scripts/rsl_rl/play.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/play.py>) | 已存在；2026-09-20 静态核查 |
+
+## F01 独立 Actor 与首版图策略的边界
+
+新增 FlyVisActor 采用 RSL-RL 5.0.1 原生 MLPModel 接口，训练、保存及完整读出 JIT/ONNX 已通过。它是冻结视觉活动的可训练读出，不是本页拟实施的无记忆稀疏测试图；默认任务配置仍用原 MLPModel。具体输入缓存、参数与导出边界见 [[04 后续升级/07 感觉运动节点映射与可训练读出]]。
