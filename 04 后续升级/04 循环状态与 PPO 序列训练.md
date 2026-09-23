@@ -7,8 +7,8 @@ tags:
 文档审查状态: 已完成本轮静态审查
 代码实施状态: 后续未实施
 运行验证状态: 未执行
-核查日期: 2026-09-20
-文档修订: 独立接手版（最小骨架与FlyDrones扩展）
+核查日期: 2026-09-22
+文档修订: FlyVis 优先视觉 MVP，MaleCNS 第二路线
 源码根目录: 'D:\zerozero_code\fruit-dronefly'
 ---
 
@@ -29,6 +29,14 @@ tags:
 | 导出仅观测输入 | 导出需显式状态输入输出和初始化规则 |
 
 FlyVis 若保留原有时间动力学，也会产生需要管理的视觉状态；“策略核心无记忆”不代表完整 actor 可以按无状态处理。
+
+## FlyVis MVP 先满足状态契约
+
+状态验收前移到 F0/F2；冻结权重仍需逐环境视觉状态、初始化、时间步、图像／策略频率和 dones/env_ids reset。视觉子步累计时长应与图像更新时间匹配；漏帧或动作保持策略需在配置中固定，不能每步重置模型来冒充原有时间动力学。
+
+冻结阶段可把 FlyVis 作为 no_grad 的有状态观测预处理器，rollout 保存当时计算出的活动特征，小型 MLP 仍可使用无记忆 PPO。视觉状态由采样／回放管理，不要求为冻结模型做 BPTT；更新 readout 时不能用乱序帧重新推进视觉状态。
+
+解冻阶段才需要保存帧序列、episode 边界和起点状态，按序重算活动并进行截断反传；明确截断长度、burn-in／起点状态处理及 rollout 和更新的一致性。先核查 RSL-RL 原生支持，再补适配。MaleCNS 循环连续图是另一条状态方程与稳定性核查，不能直接照搬 FlyVis 或 NumPy LIF 状态。
 
 ## 实施前核查而非预设重写
 
@@ -63,4 +71,4 @@ FlyVis 若保留原有时间动力学，也会产生需要管理的视觉状态�
 |---|---|
 | [scripts/rsl_rl/train.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/train.py>) | 已存在；2026-09-20 静态核查 |
 | [scripts/rsl_rl/play.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/play.py>) | 已存在；2026-09-20 静态核查 |
-| [source/DroneFollow/DroneFollow/tasks/dronefollow/agents/rsl_rl_ppo_cfg.py](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/tasks/dronefollow/agents/rsl_rl_ppo_cfg.py>) | 已存在；2026-09-20 静态核查 |
+| [source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py>) | 已迁移；2026-09-22 路径复核，未新增运行证据 |

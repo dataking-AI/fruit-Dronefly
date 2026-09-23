@@ -6,5 +6,9 @@ Thumbs.db
 *.swo
 
 # Obsidian Git creates this local credential-helper script.
+# workspace.json is per-machine pane/layout state, not repository configuration.
 # Keep the rest of .obsidian tracked as repository configuration.
 .obsidian/plugins/obsidian-git/obsidian_askpass.sh
+.obsidian/workspace.json
+_bench_bptt_mem.py
+.claude/settings.json

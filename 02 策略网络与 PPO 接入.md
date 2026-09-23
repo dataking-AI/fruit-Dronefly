@@ -105,6 +105,6 @@ M 为固定连边；W 为 PPO 更新的参数；最后一层线性读出三维�
 
 | 源码位置（相对代码仓库） | 依据 |
 |---|---|
-| [source/DroneFollow/DroneFollow/tasks/dronefollow/agents/rsl_rl_ppo_cfg.py](<D:/zerozero_code/fruit-dronefly/source/DroneFollow/DroneFollow/tasks/dronefollow/agents/rsl_rl_ppo_cfg.py>) | 已存在；2026-09-20 静态核查 |
+| [source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py](<D:/zerozero_code/fruit-dronefly/source/fruit_dronefly/fruit_dronefly/tasks/fruit_dronefly/agents/rsl_rl_ppo_cfg.py>) | 已迁移；2026-09-22 路径复核，未新增运行证据 |
 | [scripts/rsl_rl/train.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/train.py>) | 已存在；2026-09-20 静态核查 |
 | [scripts/rsl_rl/play.py](<D:/zerozero_code/fruit-dronefly/scripts/rsl_rl/play.py>) | 已存在；2026-09-20 静态核查 |
